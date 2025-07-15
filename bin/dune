@@ -1,4 +1,4 @@
 (executable
  (public_name noscan)
  (name main)
- (libraries ns))
+ (libraries nslib))

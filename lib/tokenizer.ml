@@ -26,7 +26,7 @@ module Token = struct
 			| Reserved -> "Reserved"
 	end
 
-	type token = 
+	type token_type = 
 		| Pound
 		| Dash
 		| Lbracket
@@ -40,14 +40,21 @@ module Token = struct
 		| Keyword of Keyword.keyword
 		| Number of string
 		| Identifier of string
+		| StringLit of string
 
 	type token_source_info = {
 		byte_start: int;
 		byte_end: int;
 	}
 
+	type token = {
+		token: token_type;
+		src_info: int * int;
+	}
 
-	let fprinttoken = function 
+	let make token start_byte length = { token = token; src_info = (start_byte, start_byte + length) }
+
+	let fprinttokentype = function 
 		| Pound -> "Token.Pound"
 		| Dash -> "Token.Dash"
 		| Lbracket -> "Token.Lbracket"
@@ -61,9 +68,11 @@ module Token = struct
 		| Keyword keyword -> "Token.Keyword " ^ Keyword.fprintkeyword keyword
 		| Number string -> "Token.Number " ^ string
 		| Identifier string -> "Token.Identifier " ^ string
+		| StringLit string -> "Token.StringLit " ^ string 
 
-	let source_info bs be = { byte_start = bs; byte_end = be }
-	let fprintsourceinfo info = Printf.sprintf "{ byte_start = %d ; byte_end = %d }" info.byte_start info.byte_end
+		let fprinttoken token = 
+			let fprintsrcinfo = function (byte_start, byte_end) -> Printf.sprintf "(%d, %d)" byte_start byte_end in 
+			Printf.sprintf "%s     %s" (fprinttokentype token.token) (fprintsrcinfo token.src_info)
 end
 
 
@@ -117,7 +126,7 @@ let rec tokenizer source cursor acc =
 	| Some _ch -> (raise @@ Failure ("unrecognized character: [" ^ String.make 1 _ch ^ "]"))
 	| None -> (None, 0) in
 	match next_token, bytes_advanced with
-	| (Some token, length) -> tokenizer source (cursor+length) ((token, Token.source_info cursor @@ cursor + length)::acc)
+	| (Some token, length) -> tokenizer source (cursor+length) ((Token.make token cursor length) :: acc)
 	| (None, 0) -> acc
 	| (None, length) -> tokenizer source (cursor+length) acc
 

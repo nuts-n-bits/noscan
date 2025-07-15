@@ -1,43 +1,44 @@
 [@@@ocaml.warning "-27"]
 [@@@ocaml.warning "-21"]
 
-module Token = Ns.Tokenizer.Token
-module Keyowrd = Ns.Tokenizer.Token.Keyword
+module Token = Tokenizer.Token
+module Keyowrd = Tokenizer.Token.Keyword
 
 let peek tokens_array n = if n < Array.length tokens_array then Some tokens_array.(n) else None 
 let (let*) x f = Option.bind x f 
 
 module TypeExpr = struct
+
 	type field =
-		| FieldReserve of { frange: int * int }
-		| Field of { fnumber: int; fname: string; ftype: type_expr; }
+		| FieldReserve of { frange: int * int; srctokens: Token.token list; }
+		| Field of { fnumber: int; fname: string; ftype: type_expr; srctokens: Token.token list; }
 	and tuple_field = 
-		| FieldReserve of { frange: int * int }
-		| Field of { fnumber: int; ftype: type_expr; optional: bool; }
+		| FieldReserve of { frange: int * int; srctokens: Token.token list; }
+		| Field of { fnumber: int; ftype: type_expr; optional: bool; srctokens: Token.token list;  }
 	and type_expr =
-		| MapLiteral of type_expr * type_expr
-		| ListLiteral of type_expr
-		| StructAnon of field list
-		| EnumAnon of field list
-		| TupleAnon of tuple_field list
-		| PrimI8
-		| PrimI16
-		| PrimI32
-		| PrimI64
-		| PrimI128
-		| PrimU8
-		| PrimU16
-		| PrimU32
-		| PrimU64
-		| PrimU128
-		| PrimF32
-		| PrimF64
-		| PrimStr
-		| PrimBytes
-		| PrimBool
-		| PrimDate
-		| PrimDuration
-		| Ident of string
+		| MapLiteral of type_expr * type_expr * Token.token list
+		| ListLiteral of type_expr * Token.token list
+		| StructAnon of field list * Token.token list
+		| EnumAnon of field list * Token.token list
+		| TupleAnon of tuple_field list * Token.token list
+		| PrimI8 of Token.token list
+		| PrimI16 of Token.token list
+		| PrimI32 of Token.token list
+		| PrimI64 of Token.token list
+		| PrimI128 of Token.token list
+		| PrimU8 of Token.token list
+		| PrimU16 of Token.token list
+		| PrimU32 of Token.token list
+		| PrimU64 of Token.token list
+		| PrimU128 of Token.token list
+		| PrimF32 of Token.token list
+		| PrimF64 of Token.token list
+		| PrimStr of Token.token list
+		| PrimBytes of Token.token list
+		| PrimBool of Token.token list
+		| PrimDate of Token.token list
+		| PrimDuration of Token.token list
+		| Ident of string * Token.token list
 end
 
 let rec fparse_consume_type_expr tokens cursor = 
@@ -45,30 +46,30 @@ let rec fparse_consume_type_expr tokens cursor =
 	match fparse_primitive_type_expr tokens cursor with Some result -> Some result | _ -> 
 	match fparse_list_expr tokens cursor with Some result -> Some result | _ -> 
 	match fparse_map_expr tokens cursor with Some result -> Some result | _ -> 
-	
-	match peek tokens cursor with 
-	| Some Token.Identifier ident -> Some (TypeExpr.Ident ident, 1)
+	let cur_token = peek tokens cursor in 
+	match cur_token with 
+	| Some { token = Token.Identifier ident; src_info = src_info } -> Some (TypeExpr.Ident (ident, []), 1)
 	| _ -> None
 
-and fparse_primitive_type_expr tokens cursor = 
+and fparse_primitive_type_expr (tokens: Token.token array) cursor = 
 	match peek tokens cursor with 
-	| Some Token.Identifier "i8"       -> Some (TypeExpr.PrimI8       , 1)
-	| Some Token.Identifier "i16"      -> Some (TypeExpr.PrimI16      , 1)
-	| Some Token.Identifier "i32"      -> Some (TypeExpr.PrimI32      , 1)
-	| Some Token.Identifier "i64"      -> Some (TypeExpr.PrimI64      , 1)
-	| Some Token.Identifier "i128"     -> Some (TypeExpr.PrimI128     , 1)
-	| Some Token.Identifier "u8"       -> Some (TypeExpr.PrimU8       , 1)
-	| Some Token.Identifier "u16"      -> Some (TypeExpr.PrimU16      , 1)
-	| Some Token.Identifier "u32"      -> Some (TypeExpr.PrimU32      , 1)
-	| Some Token.Identifier "u64"      -> Some (TypeExpr.PrimU64      , 1)
-	| Some Token.Identifier "u128"     -> Some (TypeExpr.PrimU128     , 1)
-	| Some Token.Identifier "f32"      -> Some (TypeExpr.PrimF32      , 1)
-	| Some Token.Identifier "f64"      -> Some (TypeExpr.PrimF64      , 1)
-	| Some Token.Identifier "date"     -> Some (TypeExpr.PrimDate     , 1)
-	| Some Token.Identifier "bool"     -> Some (TypeExpr.PrimBool     , 1)
-	| Some Token.Identifier "str"      -> Some (TypeExpr.PrimStr      , 1)
-	| Some Token.Identifier "bytes"    -> Some (TypeExpr.PrimBytes    , 1)
-	| Some Token.Identifier "duration" -> Some (TypeExpr.PrimDuration , 1)
+	| Some (Token.Identifier "i8"      , srcloc) -> Some (TypeExpr.PrimI8       , [srcloc] , 1)
+	| Some (Token.Identifier "i16"     , srcloc) -> Some (TypeExpr.PrimI16      , [srcloc] , 1)
+	| Some (Token.Identifier "i32"     , srcloc) -> Some (TypeExpr.PrimI32      , [srcloc] , 1)
+	| Some (Token.Identifier "i64"     , srcloc) -> Some (TypeExpr.PrimI64      , [srcloc] , 1)
+	| Some (Token.Identifier "i128"    , srcloc) -> Some (TypeExpr.PrimI128     , [srcloc] , 1)
+	| Some (Token.Identifier "u8"      , srcloc) -> Some (TypeExpr.PrimU8       , [srcloc] , 1)
+	| Some (Token.Identifier "u16"     , srcloc) -> Some (TypeExpr.PrimU16      , [srcloc] , 1)
+	| Some (Token.Identifier "u32"     , srcloc) -> Some (TypeExpr.PrimU32      , [srcloc] , 1)
+	| Some (Token.Identifier "u64"     , srcloc) -> Some (TypeExpr.PrimU64      , [srcloc] , 1)
+	| Some (Token.Identifier "u128"    , srcloc) -> Some (TypeExpr.PrimU128     , [srcloc] , 1)
+	| Some (Token.Identifier "f32"     , srcloc) -> Some (TypeExpr.PrimF32      , [srcloc] , 1)
+	| Some (Token.Identifier "f64"     , srcloc) -> Some (TypeExpr.PrimF64      , [srcloc] , 1)
+	| Some (Token.Identifier "date"    , srcloc) -> Some (TypeExpr.PrimDate     , [srcloc] , 1)
+	| Some (Token.Identifier "bool"    , srcloc) -> Some (TypeExpr.PrimBool     , [srcloc] , 1)
+	| Some (Token.Identifier "str"     , srcloc) -> Some (TypeExpr.PrimStr      , [srcloc] , 1)
+	| Some (Token.Identifier "bytes"   , srcloc) -> Some (TypeExpr.PrimBytes    , [srcloc] , 1)
+	| Some (Token.Identifier "duration", srcloc) -> Some (TypeExpr.PrimDuration , [srcloc] , 1)
 	| _ -> None
 
 and hparse_consume_token tokens cursor token = 
@@ -136,7 +137,7 @@ and fparse_map_expr tokens cursor =
 	let old_cursor = cursor in
 	let* advance = hparse_consume_token tokens cursor Token.Lbracket in 
 	let cursor = cursor + advance in
-	let* (lhs_type, advance) = fparse_consume_type_expr tokens cursor in
+	let* (lhs_type, lhs_srcloclist, advance) = fparse_consume_type_expr tokens cursor in
 	let cursor = cursor + advance in
 	let* advance = hparse_consume_token tokens cursor Token.Arrow in
 	let cursor = cursor + advance in
@@ -144,7 +145,7 @@ and fparse_map_expr tokens cursor =
 	let cursor = cursor + advance in
 	let* advance = hparse_consume_token tokens cursor Token.Rbracket in
 	let cursor = cursor + advance in
-	Some (TypeExpr.MapLiteral (lhs_type, rhs_type), cursor - old_cursor)
+	Some (TypeExpr.MapLiteral (lhs_type, rhs_type), [], cursor - old_cursor)
 
 and fparse_list_expr tokens cursor = 
 	let old_cursor = cursor in

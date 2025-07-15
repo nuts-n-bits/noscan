@@ -3,7 +3,7 @@
 
 let () = print_endline "Hello, World!"
 
-let input = {aaaa|
+let input1 = {aaaa|
 
 	struct User {
 		#1 name str
@@ -40,7 +40,19 @@ let input = {aaaa|
 	
 |aaaa}
 
-let _ = 
-	let printf (t, d) = print_endline @@ Ns.Tokenizer.Token.fprinttoken t; (*print_endline @@ Ns.Tokenizer.Token.fprintsourceinfo d*) in
-	List.map printf @@ List.rev @@ Ns.Tokenizer.tokenizer input 0 []
+let main1 () = 
+	let print_it (t, d) = print_endline @@ Nslib.Tokenizer.Token.fprinttoken t; 
+	(* print_endline @@ "                              " ^ Nslib.Tokenizer.Token.fprintsourceinfo d;
+	print_endline "" *) in
+	List.map print_it @@ List.rev @@ Nslib.Tokenizer.tokenizer input1 0 []
 	
+let input2 = {aaaa|
+
+-- this is a 'map type literal'
+[str -> str]
+
+|aaaa}
+
+let main2 () = 
+	let tokens = Nslib.Tokenizer.tokenizer input2 0 [] in
+	let expr = Nslib.Parser.fparse_consume_type_expr 
